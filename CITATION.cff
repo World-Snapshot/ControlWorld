@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use ControlWorld, please cite it using the metadata below."
+title: "ControlWorld: A Plugin WebUI for World Snapshot Models"
+type: software
+authors:
+  - family-names: Fang
+    given-names: Sen
+  - family-names: Metaxas
+    given-names: Dimitris N.
+repository-code: "https://github.com/World-Snapshot/ControlWorld"
+license: MIT

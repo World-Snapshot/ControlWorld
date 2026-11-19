@@ -1,0 +1,9 @@
+[submodule "wsg_reader"]
+	path = wsg_reader
+	url = git@github.com:World-Snapshot/wsg_reader.git
+[submodule "env"]
+	path = env
+	url = git@github.com:World-Snapshot/env.git
+[submodule "plugins/WSMs"]
+	path = plugins/WSMs
+	url = git@github.com:World-Snapshot/WSMs.git

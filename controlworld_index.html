@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ControlWorld - Control Everything in the World</title>
+    
+    <!-- Three.js -->
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <!-- Fallback for legacy support -->
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Implementation note. -->
+    <script>
+        console.log('🚀 ControlWave 页面开始加载...', new Date().toISOString());
+        console.log('📍 URL:', window.location.href);
+        console.log('🔄 Document状态:', document.readyState);
+        const originalMode = new URLSearchParams(window.location.search).get("cw_original") === "1";
+        if (originalMode) {
+            document.documentElement.setAttribute("translate", "no");
+            document.documentElement.classList.add("notranslate");
+            const noTranslateMeta = document.createElement("meta");
+            noTranslateMeta.name = "google";
+            noTranslateMeta.content = "notranslate";
+            document.head.appendChild(noTranslateMeta);
+            window.addEventListener("load", () => {
+                window.setTimeout(() => {
+                    document.documentElement.removeAttribute("translate");
+                    document.documentElement.classList.remove("notranslate");
+                    noTranslateMeta.remove();
+                    const cleanUrl = new URL(window.location.href);
+                    cleanUrl.searchParams.delete("cw_original");
+                    window.history.replaceState({}, "", cleanUrl);
+                }, 1500);
+            }, { once: true });
+        }
+        
+        // Validate the current state.
+        // Browser translators rewrite dynamic plugin DOM and may be unable to
+        // restore nodes created after translation. Reload once when the browser
+        // switches from a translated document back to its English source.
+        (function installTranslationRecovery() {
+            const root = document.documentElement;
+            const recoveryKey = "controlworld-translation-recovery";
+            const isTranslated = () =>
+                root.classList.contains("translated-ltr") ||
+                root.classList.contains("translated-rtl") ||
+                root.getAttribute("data-translated") === "true";
+            let translatedSeen = isTranslated();
+            let recovering = sessionStorage.getItem(recoveryKey) === "1";
+            if (recovering) {
+                sessionStorage.removeItem(recoveryKey);
+                window.setTimeout(() => { recovering = false; }, 1000);
+            }
+            const observer = new MutationObserver(() => {
+                const translated = isTranslated();
+                if (translated) translatedSeen = true;
+                if (translatedSeen && !translated && !recovering) {
+                    sessionStorage.setItem(recoveryKey, "1");
+                    observer.disconnect();
+                    window.location.reload();
+                }
+            });
+            observer.observe(root, {
+                attributes: true,
+                attributeFilter: ["class", "lang", "data-translated"]
+            });
+        })();
+
+        function checkPageHealth() {
+            console.log('🔍 页面健康检查开始...');
+            
+            // Implementation note.
+            console.log('📰 页面标题:', document.title);
+            console.log('🏗️ Body存在:', !!document.body);
+            console.log('📏 Body长度:', document.body ? document.body.innerHTML.length : 0);
+            
+            // Validate the current state (HTML).
+            const elements = {
+                'header': '.header-section',
+                'main-container': '.main-container', 
+                'main-content': '.main-content',
+                'tabs-container': '.tabs-container',
+                'plugin-management': '#plugin-management'
+            };
+            
+            console.log('🏗️ 关键元素检查:');
+            for (const [name, selector] of Object.entries(elements)) {
+                const element = document.querySelector(selector);
+                console.log(`  - ${name}: ${!!element}`);
+                if (!element) {
+                    console.error(`❌ 缺失关键元素: ${selector}`);
+                }
+            }
+            
+            console.log('✅ 页面健康检查完成');
+        }
+        
+        // Validate the current state (DOM).
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkPageHealth);
+        } else {
+            checkPageHealth();
+        }
+        
+        // Display the relevant element.
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                console.log('👀 页面变为可见');
+            } else {
+                console.log('🙈 页面变为隐藏');
+            }
+        });
+        
+        // Register the event listener.
+        window.addEventListener('beforeunload', function() {
+            console.log('👋 页面即将卸载');
+        });
+    </script>
+
+    <!-- ES6 Module Support with Error Handling -->
+    <script>
+        // Handle the current operation.
+        window.addEventListener('error', function(e) {
+            console.error('❌ 全局错误:', e.message, e.filename, e.lineno, e.colno);
+            // Display the relevant element.
+            if (document.body && document.body.innerHTML.trim() === '') {
+                document.body.innerHTML = '<div style="padding: 20px; color: red;">页面加载出错，请刷新重试</div>';
+            }
+        });
+    </script>
+    <script src="static/js/websocket-manager.js"></script>
+    <script type="module" src="./plugins/plugin-system.js" onerror="console.error('插件系统加载失败')"></script>
+    
+    <!-- Manage the required filesystem resource. -->
+    <link rel="stylesheet" href="static/style/main.css">
+    <link rel="stylesheet" href="static/style/plugins.css">
+    
+    <!-- Handle the error condition (JavaScript). -->
+    <noscript>
+        <link rel="stylesheet" href="static/style/noscript.css">
+        <div class="error-message">JavaScript 被禁用或加载失败，请启用 JavaScript 或刷新页面。</div>
+    </noscript>
+    
+</head>
+<body>
+    <!-- Implementation note. -->
+    <div class="header-section">
+        <h1>ControlWorld</h1>
+        <div class="header-links">
+            <a href="https://world-snapshot.github.io/doc" target="_blank">[Document]</a>
+            <a href="https://github.com/World-Snapshot/ControlWave" target="_blank">[GitHub]</a>
+            <a href="https://x.com/SenFang01" target="_blank">[Author X]</a>
+        </div>
+    </div>
+
+    <!-- Implementation note. -->
+    <div class="main-container">
+        <!-- Implementation note. -->
+        <div class="model-selection-row">
+            <!-- Process the wave parameters (Legacy, model, selectors, are, disabled). -->
+            <div class="selection-group">
+                <label for="theme-select">Theme:</label>
+                <select id="theme-select" title="Choose interface theme">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+            <div class="selection-group">
+                <button id="restore-original-btn" class="restore-original-btn notranslate" type="button" translate="no">Restore Original</button>
+            </div>
+        </div>
+        
+        <!-- Implementation note. -->
+        <div class="tabs-container">
+            <div class="tab-buttons">
+                <!-- Add the required entry. -->
+                <button class="tab-button" data-tab="plugin-management">Plugin Management</button>
+            </div>
+        </div>
+
+        <!-- Implementation note. -->
+        <div class="main-content">
+            <!-- Add the required entry. -->
+
+            <!-- Implementation note (Plugin, Management). -->
+            <div id="plugin-management" class="tab-content controlworld-plugin-host" data-plugin-style="inherit">
+                <div class="plugin-management-container">
+                    <h2>Plugin Management</h2>
+                    
+                    <!-- Implementation note (URL). -->
+                    <div class="plugin-install-section">
+                        <h3>Install a New Plugin</h3>
+                        <div class="url-install-form">
+                            <div class="form-group">
+                                <label for="plugin-url">Plugin repository URL, repository subfolder URL, or path (GitHub and Hugging Face; SSH is not supported):</label>
+                                <input type="text" id="plugin-url" placeholder="https://github.com/user/plugin-name or https://huggingface.co/user/repo/tree/main/plugin-folder" class="url-input">
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" id="install-from-url-btn">Download and Install from URL</button>
+                                <button class="btn" id="install-local-btn">Choose a Local Plugin Folder</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Use the default value. -->
+                    <div class="plugin-order-section">
+                        <h3>Default Plugin Order</h3>
+                        <p style="margin-bottom: 15px; color: #495057; font-size: 14px;">
+                            Drag plugins to change their display order. Changes are saved automatically.
+                        </p>
+                        <div id="default-plugins-list" class="sortable-list">
+                            <!-- Add the required entry. -->
+                        </div>
+                    </div>
+                    
+                    <!-- Manage the plugin state. -->
+                    <div class="plugin-list-section">
+                        <h3>Plugin Registry</h3>
+                        <p style="margin-bottom: 15px; color: #244d78; background: #eaf4ff; padding: 10px; border-radius: 4px; border-left: 4px solid #4d91d9;">
+                            <strong>Safe uninstall:</strong> Uninstall only disables the plugin in this WebUI. Its local folder and files are retained, and the plugin remains available for installation.
+                        </p>
+                        <div class="plugin-table-container">
+                            <table class="plugin-table" id="plugin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Version</th>
+                                        <th>Author</th>
+                                        <th>Status</th>
+                                        <th>Repository</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="plugin-table-body">
+                                    <!-- Manage the plugin state. -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="plugin-actions">
+                        <button class="btn" id="refresh-plugins-btn">Refresh Plugin Registry</button>
+                        <button class="btn" id="clear-cache-btn">Clear UI Cache</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <script>
+        // Get the required value.
+        function getViserPort() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const backendPort = urlParams.get('backend');
+            if (backendPort) {
+                console.log('📡 从URL获取后端端口:', backendPort);
+                return parseInt(backendPort);
+            }
+            console.log('📡 使用默认后端端口: 8081');
+            return 8081;
+        }
+
+        // Implementation note.
+        const appState = {
+            currentTab: 'wsm-v1-inference',
+            currentWave: 0,
+            viserPort: getViserPort(),
+            viserLoaded: false,
+            waves: [
+                { id: 0, name: "自由粒子", amplitude: 1.2, frequency: 2.0, kx: 1.0, ky: 0.5, kz: 0.3 },
+                { id: 1, name: "驻波", amplitude: 1.0, frequency: 3.0, kx: 1.0, ky: 1.0, kz: 0.0 },
+                { id: 2, name: "干涉波", amplitude: 0.8, frequency: 2.5, kx: -1.5, ky: 1.5, kz: 0.0 }
+            ]
+        };
+
+        // Manage the plugin state.
+        function applyTheme(theme, persist = true) {
+            const normalized = theme === "dark" ? "dark" : "light";
+            document.documentElement.dataset.theme = normalized;
+            document.body.dataset.theme = normalized;
+            document.documentElement.style.colorScheme = normalized;
+            if (persist) localStorage.setItem("controlworld-theme", normalized);
+            window.dispatchEvent(new CustomEvent("controlworld-theme-change", { detail: { theme: normalized } }));
+        }
+
+        function initializeApp() {
+            console.log("🚀 ControlWave 混合界面已初始化");
+            console.log("ℹ️ 插件系统正在加载...");
+            const selector = document.getElementById("theme-select");
+            const savedTheme = localStorage.getItem("controlworld-theme");
+            const initialTheme = savedTheme === "dark" ? "dark" : "light";
+            selector.value = initialTheme;
+            applyTheme(initialTheme, false);
+            selector.addEventListener("change", event => applyTheme(event.target.value));
+            document.getElementById("restore-original-btn").addEventListener("click", () => {
+                const originalUrl = new URL(window.location.href);
+                originalUrl.searchParams.set("cw_original", "1");
+                window.location.replace(originalUrl);
+            });
+        }
+
+        // Configure the required value.
+        function setupTabSwitching() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetTab = button.dataset.tab;
+                    
+                    // Update the current state.
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    // Update the current state.
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === targetTab) {
+                            content.classList.add('active');
+                        }
+                    });
+                    
+                    appState.currentTab = targetTab;
+                    console.log(`切换到选项卡: ${targetTab}`);
+                });
+            });
+        }
+
+        // Configure the required value.
+        function setupWaveControls() {
+            const waveSelector = document.getElementById('wave-selector');
+            const timeSlider = document.getElementById('time-slider');
+            const timeValue = document.getElementById('time-value');
+            const phaseColor = document.getElementById('phase-color');
+            const updateBtn = document.getElementById('update-viz');
+
+            // Process the wave parameters.
+            waveSelector.addEventListener('change', (e) => {
+                appState.currentWave = parseInt(e.target.value);
+                updateWaveParameters();
+                updateVisualization();
+            });
+
+            // Manage the current time value.
+            timeSlider.addEventListener('input', (e) => {
+                timeValue.textContent = parseFloat(e.target.value).toFixed(1);
+                updateVisualization();
+            });
+
+            // Implementation note.
+            phaseColor.addEventListener('change', () => {
+                updateVisualization();
+            });
+
+            // Update the current state.
+            updateBtn.addEventListener('click', () => {
+                updateVisualization();
+            });
+
+            // Implementation note (Generate).
+            document.getElementById('generate-btn').addEventListener('click', () => {
+                const prompt = document.getElementById('prompt-input').value;
+                console.log(`✅ Generated wave space for: "${prompt.substring(0, 50)}..."`);
+            });
+
+            // Implementation note (Random, Seed).
+            document.getElementById('random-seed-btn').addEventListener('click', () => {
+                const seed = Math.floor(Math.random() * 999999) + 1;
+                console.log(`🎲 Random seed: ${seed}`);
+            });
+        }
+
+        // Configure the required value.
+        function setupParameterControls() {
+            // Implementation note (Wave, List).
+            const waveItems = document.querySelectorAll('.wave-item');
+            waveItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const waveId = parseInt(item.dataset.wave);
+                    
+                    // Update the current state.
+                    waveItems.forEach(w => w.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    // Update the current state.
+                    appState.currentWave = waveId;
+                    document.getElementById('wave-selector').value = waveId;
+                    
+                    updateWaveParameters();
+                    updateVisualization();
+                });
+            });
+
+            // Define the required parameters.
+            const amplitudeSlider = document.getElementById('amplitude-slider');
+            const frequencySlider = document.getElementById('frequency-slider');
+            const amplitudeValue = document.getElementById('amplitude-value');
+            const frequencyValue = document.getElementById('frequency-value');
+
+            amplitudeSlider.addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                amplitudeValue.textContent = value.toFixed(1);
+                appState.waves[appState.currentWave].amplitude = value;
+                updateWaveList();
+                updateVisualization();
+            });
+
+            frequencySlider.addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                frequencyValue.textContent = value.toFixed(1);
+                appState.waves[appState.currentWave].frequency = value;
+                updateVisualization();
+            });
+
+            // Process the wave parameters.
+            const kxInput = document.getElementById('kx-input');
+            const kyInput = document.getElementById('ky-input');
+            const kzInput = document.getElementById('kz-input');
+
+            [kxInput, kyInput, kzInput].forEach((input, index) => {
+                input.addEventListener('change', (e) => {
+                    const value = parseFloat(e.target.value);
+                    const keys = ['kx', 'ky', 'kz'];
+                    appState.waves[appState.currentWave][keys[index]] = value;
+                    updateVisualization();
+                });
+            });
+
+            // Load the required resource.
+            document.getElementById('export-waves').addEventListener('click', () => {
+                console.log('💾 导出波函数参数');
+            });
+
+            document.getElementById('load-waves').addEventListener('click', () => {
+                console.log('📁 加载波函数参数');
+            });
+        }
+
+        // Update the current state.
+        function updateWaveParameters() {
+            const wave = appState.waves[appState.currentWave];
+            
+            document.getElementById('amplitude-slider').value = wave.amplitude;
+            document.getElementById('amplitude-value').textContent = wave.amplitude.toFixed(1);
+            document.getElementById('frequency-slider').value = wave.frequency;
+            document.getElementById('frequency-value').textContent = wave.frequency.toFixed(1);
+            document.getElementById('kx-input').value = wave.kx;
+            document.getElementById('ky-input').value = wave.ky;
+            document.getElementById('kz-input').value = wave.kz;
+        }
+
+        // Update the current state.
+        function updateWaveList() {
+            const waveItems = document.querySelectorAll('.wave-item');
+            waveItems.forEach((item, index) => {
+                const wave = appState.waves[index];
+                item.textContent = `Wave #${wave.id}: ${wave.name} (A=${wave.amplitude.toFixed(1)})`;
+            });
+        }
+
+        // Load the required resource (Viser).
+        function loadViserVisualization() {
+            const iframe = document.getElementById('viser-iframe');
+            const loading = document.getElementById('viser-loading');
+            
+            // Configure the required value (iframe).
+            iframe.src = `http://localhost:${appState.viserPort}`;
+            
+            // Load the required resource.
+            iframe.addEventListener('load', () => {
+                loading.style.display = 'none';
+                iframe.style.display = 'block';
+                appState.viserLoaded = true;
+                console.log('✅ Viser 可视化已加载');
+            });
+
+            iframe.addEventListener('error', () => {
+                loading.innerHTML = `
+                    <div class="status-indicator" style="background: #f8d7da; color: #721c24; border-color: #f5c6cb;">
+                        ❌ Viser 服务器连接失败，请确保后端正在运行在端口 ${appState.viserPort}
+                    </div>
+                `;
+            });
+        }
+
+        // Update the current state.
+        function updateVisualization() {
+            if (!appState.viserLoaded) {
+                console.log('⚠️ Viser 尚未加载完成');
+                return;
+            }
+
+            const params = {
+                waveIndex: appState.currentWave,
+                time: parseFloat(document.getElementById('time-slider').value),
+                usePhaseColor: document.getElementById('phase-color').checked,
+                waveParams: appState.waves[appState.currentWave]
+            };
+
+            // Implementation note (postMessage, Viser, iframe).
+            const iframe = document.getElementById('viser-iframe');
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                    type: 'updateVisualization',
+                    params: params
+                }, '*');
+            }
+
+            console.log('🔄 更新可视化参数:', params);
+        }
+
+        // Scan the available resources.
+        async function scanAndPopulatePluginSelectors() {
+            try {
+                // Scan the available resources (plugins).
+                // Manage the plugin state.
+                const pluginFolders = [
+                    'general',
+                    'custom-decoder',
+                    'lora-example',
+                    'wsg-custom',
+                    'wave2pixel',
+                    'pixel-decoder',
+                    'wsg-enhanced',
+                    'lora-model-1',
+                    'lora-checkpoint'
+                ];
+                
+                // Find the required resource (pixel).
+                const decoderSelect = document.getElementById('decoder-select');
+                decoderSelect.innerHTML = '<option value="wave2pixel">wave2pixel (default)</option>';
+                pluginFolders.forEach(folder => {
+                    if (folder.includes('pixel') && folder !== 'wave2pixel') {
+                        const option = document.createElement('option');
+                        option.value = `plugins/${folder}`;
+                        option.textContent = `plugins/${folder}`;
+                        decoderSelect.appendChild(option);
+                    }
+                });
+                // Add the required entry.
+                const browseDecoderOption = document.createElement('option');
+                browseDecoderOption.value = 'browse-local';
+                browseDecoderOption.textContent = 'Browse Local Folder...';
+                decoderSelect.appendChild(browseDecoderOption);
+                
+                // Find the required resource (LoRA, lora).
+                const loraSelect = document.getElementById('lora-select');
+                loraSelect.innerHTML = '<option value="none">None</option>';
+                pluginFolders.forEach(folder => {
+                    if (folder.toLowerCase().includes('lora')) {
+                        const option = document.createElement('option');
+                        option.value = `plugins/${folder}`;
+                        option.textContent = `plugins/${folder}`;
+                        loraSelect.appendChild(option);
+                    }
+                });
+                // Add the required entry.
+                const browseLoraOption = document.createElement('option');
+                browseLoraOption.value = 'browse-local';
+                browseLoraOption.textContent = 'Browse Local Folder...';
+                loraSelect.appendChild(browseLoraOption);
+                
+                // Find the required resource (WSG, Support, wsg).
+                const wsgSelect = document.getElementById('wsg-support-select');
+                wsgSelect.innerHTML = '<option value="wsg">wsg (default)</option>';
+                pluginFolders.forEach(folder => {
+                    if (folder.toLowerCase().includes('wsg') && folder !== 'wsg') {
+                        const option = document.createElement('option');
+                        option.value = `plugins/${folder}`;
+                        option.textContent = `plugins/${folder}`;
+                        wsgSelect.appendChild(option);
+                    }
+                });
+                // Add the required entry.
+                const browseWsgOption = document.createElement('option');
+                browseWsgOption.value = 'browse-local';
+                browseWsgOption.textContent = 'Browse Local Folder...';
+                wsgSelect.appendChild(browseWsgOption);
+                
+                // Add the required entry (change).
+                setupSelectorListeners();
+                
+                console.log('✅ Plugin selectors populated');
+            } catch (error) {
+                console.error('Failed to scan plugins:', error);
+            }
+        }
+        
+        // Register the event listener.
+        function setupSelectorListeners() {
+            const selectors = ['decoder-select', 'lora-select', 'wsg-support-select'];
+            
+            selectors.forEach(selectorId => {
+                const selector = document.getElementById(selectorId);
+                selector.addEventListener('change', async (e) => {
+                    if (e.target.value === 'browse-local') {
+                        // Manage the required filesystem resource.
+                        // Implementation note (File, System, Access, API).
+                        const folderPath = prompt('Please enter the folder path relative to ControlWave directory:');
+                        if (folderPath) {
+                            // Create the required object.
+                            const newOption = document.createElement('option');
+                            newOption.value = folderPath;
+                            newOption.textContent = folderPath;
+                            e.target.insertBefore(newOption, e.target.lastElementChild);
+                            e.target.value = folderPath;
+                            
+                            console.log(`Selected custom folder: ${folderPath}`);
+                        } else {
+                            // Handle the conditional case.
+                            e.target.selectedIndex = 0;
+                        }
+                    }
+                });
+            });
+        }
+
+        // Implementation note (WebSocket).
+        // Note the relevant constraint (controlWaveWebSocket, websocket-manager.js).
+        let reconnectTimer = null;
+        
+        function connectWebSocket() {
+            // Implementation note (WebSocket, websocket-manager.js).
+            console.log('🔌 WebSocket由websocket-manager.js管理');
+        }
+        
+        // Send the message (WebSocket).
+        function sendWebSocketMessage(message) {
+            if (window.controlWaveWebSocket && window.controlWaveWebSocket.isConnected) {
+                window.controlWaveWebSocket.send(message);
+            } else {
+                console.warn('WebSocket 未连接，无法发送消息');
+            }
+        }
+        
+        // Implementation note (WebSocket, websocket-manager.js).
+
+        // Initialize the required state.
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+            // Legacy model selectors are disabled; only the theme selector remains.
+            // Implementation note (WebSocket, websocket-manager.js).
+        });
+
+        // Register the event listener (Viser).
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'viserReady') {
+                console.log('📡 Viser 准备就绪');
+                updateVisualization();
+            }
+        });
+    </script>
+    
+    <footer>
+        <p>This website is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.</p>
+        <p>
+            This means you are free to borrow the <a href="https://github.com/World-Snapshot/ControlWave">source code</a> of this website,
+            we just ask that you link back to this page in the footer.
+        </p>
+    </footer>
+</body>
+</html>

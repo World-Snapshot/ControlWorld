@@ -1,0 +1,514 @@
+/* Implementation note (ControlWave, app.py). */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ControlWorld host design tokens. Plugins inherit these by default. */
+:root {
+    --cw-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --cw-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --cw-font-size: 14px;
+    --cw-text-color: #202122;
+}
+
+body {
+    font-family: var(--cw-font-sans);
+    background: #f5f5f5;
+    overflow-x: hidden;
+}
+
+/* Implementation note. */
+.header-section {
+    background: #fff;
+    border-bottom: 1px solid #a2a9b1;
+    padding: 15px 30px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.header-section h1 {
+    color: #202122;
+    font-size: 1.5em;
+    margin: 0;
+    display: inline-block;
+    font-weight: 500;
+}
+
+.header-links {
+    float: right;
+    margin-top: 5px;
+}
+
+.header-links a {
+    color: #3366cc;
+    text-decoration: none;
+    margin: 0 15px;
+    font-size: 14px;
+}
+
+.header-links a:hover {
+    text-decoration: underline;
+}
+
+/* Implementation note. */
+.model-selection-row {
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom: 1px solid rgba(162, 169, 177, 0.3);
+    padding: 15px 30px;
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+.selection-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.selection-group label {
+    font-weight: 500;
+    color: #202122;
+    font-size: 14px;
+}
+
+.selection-group select {
+    padding: 6px 12px;
+    border: 1px solid #a2a9b1;
+    border-radius: 4px;
+    background: white;
+    font-size: 14px;
+    min-width: 180px;
+}
+
+.restore-original-btn { padding:6px 12px; border:1px solid #a2a9b1; border-radius:4px; background:#fff; color:#202122; font:inherit; font-size:14px; cursor:pointer; }
+.restore-original-btn:hover { border-color:#3366cc; color:#2458ad; }
+body[data-theme="dark"] .restore-original-btn { background:#1a232d; border-color:#435160; color:#e4ebf3; }
+
+/* Implementation note. */
+.main-container {
+    margin-top: 60px;
+    min-height: calc(100vh - 60px);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative; /* Implementation note (absolute). */
+}
+
+/* Implementation note. */
+.tabs-container {
+    background: rgba(255, 255, 255, 0.95);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(162, 169, 177, 0.3);
+    padding: 0 30px;
+}
+
+.tab-buttons {
+    display: flex;
+    gap: 0;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    color: #666;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    font-weight: 500;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.tab-button:hover {
+    color: #202122;
+    background: rgba(248, 249, 250, 0.8);
+}
+
+.tab-button.active {
+    color: #0066cc;
+    border-bottom-color: #0066cc;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* Implementation note. */
+.main-content {
+    flex: 1;
+    display: flex;
+    width: 100%;
+    min-height: 0;
+    height: calc(100vh - 200px); /* Ensure the required condition holds. */
+}
+
+/* Implementation note. */
+.visualization-area {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    background: #f5f5f5;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Implementation note. */
+.visualization-content {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+}
+
+/* Viser iframe */
+.viser-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+/* Implementation note. */
+.control-panel {
+    flex: 0 0 380px;
+    width: 380px;
+    background: #fff;
+    border-left: 1px solid #a2a9b1;
+    overflow-y: auto;
+    max-height: calc((100vh - 200px) * 1.3); /* Implementation note (1). */
+    height: fit-content;
+}
+
+.control-section {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.control-section:last-child {
+    border-bottom: none;
+}
+
+.control-section h3 {
+    color: #202122;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Implementation note. */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 500;
+    color: #202122;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #a2a9b1;
+    border-radius: 4px;
+    font-size: 14px;
+    background: white;
+}
+
+.form-group input[type="range"] {
+    height: 6px;
+    background: #ddd;
+    outline: none;
+    border-radius: 3px;
+}
+
+.form-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+/* Implementation note. */
+.btn {
+    padding: 8px 16px;
+    border: 1px solid #a2a9b1;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    background: white;
+    margin: 2px;
+}
+
+.btn-primary {
+    background: #0066cc;
+    color: white;
+    border-color: #0066cc;
+}
+
+.btn-primary:hover {
+    background: #0052a3;
+    border-color: #0052a3;
+}
+
+.btn:hover {
+    background: #f8f9fa;
+}
+
+.btn-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Implementation note (Wave, List). */
+.wave-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.wave-item {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+}
+
+.wave-item:hover {
+    background: #e9ecef;
+}
+
+.wave-item.active {
+    background: #0066cc;
+    color: white;
+    border-color: #0052a3;
+}
+
+/* Plugin style contract: host typography is the safe default. A plugin may
+ * explicitly opt out with styleMode: "custom". */
+.controlworld-plugin-host[data-plugin-style="inherit"] {
+    font-family: var(--cw-font-sans) !important;
+    font-size: var(--cw-font-size);
+    color: var(--cw-text-color);
+}
+
+.controlworld-plugin-host[data-plugin-style="inherit"] :where(*) {
+    font-family: inherit !important;
+}
+
+.controlworld-plugin-host[data-plugin-style="inherit"] :where(pre, code, kbd, samp) {
+    font-family: var(--cw-font-mono) !important;
+}
+
+.controlworld-plugin-host[data-plugin-style="inherit"] :where(button, input, select, textarea) {
+    font: inherit;
+}
+
+/* Hide the inactive element. */
+.tab-content {
+    display: none;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    flex: 1;
+}
+
+.tab-content.active {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    flex: 1;
+}
+
+/* Define the required parameters. */
+.wave-parameters-panel {
+    background: rgba(255, 255, 255, 0.95);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(162, 169, 177, 0.3);
+    padding: 20px 30px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.wave-parameters-content {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+.wave-list-section {
+    flex: 1;
+}
+
+.wave-params-section {
+    flex: 1;
+}
+
+.wave-vector-section {
+    flex: 1;
+}
+
+.param-row {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.param-row label {
+    min-width: 80px;
+    font-size: 13px;
+}
+
+.param-row input {
+    flex: 1;
+}
+
+/* Implementation note. */
+@media (max-width: 1200px) {
+    .main-content {
+        flex-direction: column;
+    }
+    
+    .control-panel {
+        border-left: none;
+        border-top: 1px solid #a2a9b1;
+    }
+    
+    .wave-parameters-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+}
+
+/* Load the required resource. */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    color: #666;
+    font-size: 16px;
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    font-size: 12px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #28a745;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+footer {
+    text-align: center;
+    padding: 0px;
+    margin-top: 0px;
+    border-top: 1px solid #a2a9b1;
+    font-size: 14px;
+    color: #666;
+}
+
+footer a {
+    color: #3366cc;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+/* ControlWorld theme contract. Light is the default; dark is opt-in. */
+body[data-theme="dark"] {
+    color-scheme: dark;
+    background: #0d1218;
+    color: #dbe3ec;
+}
+body[data-theme="dark"] .header-section {
+    background: #141b23;
+    border-bottom-color: #344150;
+    box-shadow: 0 2px 8px rgba(0,0,0,.38);
+}
+body[data-theme="dark"] .header-section h1,
+body[data-theme="dark"] .selection-group label,
+body[data-theme="dark"] .control-section h3,
+body[data-theme="dark"] .form-group label { color: #e6edf5; }
+body[data-theme="dark"] .header-links a { color: #82b8ff; }
+body[data-theme="dark"] .main-container,
+body[data-theme="dark"] .main-content,
+body[data-theme="dark"] .visualization-area { background: #0d1218; }
+body[data-theme="dark"] .model-selection-row,
+body[data-theme="dark"] .tabs-container {
+    background: rgba(20,27,35,.97);
+    border-bottom-color: #303c49;
+}
+body[data-theme="dark"] .selection-group select,
+body[data-theme="dark"] .form-group input,
+body[data-theme="dark"] .form-group select,
+body[data-theme="dark"] .form-group textarea {
+    background: #1a232d;
+    border-color: #435160;
+    color: #e4ebf3;
+}
+body[data-theme="dark"] .tab-button { color: #9eabb9; }
+body[data-theme="dark"] .tab-button:hover { color: #f0f5fa; background: #1b2530; }
+body[data-theme="dark"] .tab-button.active {
+    color: #78b5ff;
+    border-bottom-color: #4b9fff;
+    background: #18222d;
+}
+body[data-theme="dark"] .control-panel { background: #151c24; border-left-color: #344150; }
+body[data-theme="dark"] .control-section { border-bottom-color: #2d3743; }
+body[data-theme="dark"] footer {
+    background: #111820;
+    border-top-color: #303c49;
+    color: #9eabb9;
+}
+body[data-theme="dark"] footer a { color: #82b8ff; }

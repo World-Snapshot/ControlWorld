@@ -12,6 +12,7 @@ import subprocess
 TEMPLATE_ROOT = Path(__file__).resolve().parent
 CONTROLWORLD_ROOT = TEMPLATE_ROOT.parents[1]
 DEFAULT_WSMS_ROOT = CONTROLWORLD_ROOT / "plugins" / "WSMs"
+DEFAULT_WSG_READER_ROOT = CONTROLWORLD_ROOT / "wsg_reader"
 TEMPLATE_FILES = ("README.md", "Dockerfile", ".dockerignore", "start_space.py")
 
 
@@ -66,7 +67,7 @@ def main() -> None:
     reader_root = (
         args.wsg_reader_root.expanduser().resolve()
         if args.wsg_reader_root is not None
-        else (wsms_root / "WSM_v1" / "wsg_reader").resolve()
+        else DEFAULT_WSG_READER_ROOT.resolve()
     )
 
     host_count = _copy_tracked(
@@ -80,7 +81,15 @@ def main() -> None:
     wsms_count = _copy_tracked(
         wsms_root,
         wsms_destination,
-        excluded_prefixes=("WSM_v1/env", "WSM_v1/wsg_reader", "WSM_v1/debug"),
+        excluded_prefixes=(
+            "assets",
+            "src/examples",
+            "WSM_v1/debug",
+            "WSM_v1/env",
+            "WSM_v1/manual_processing",
+            "WSM_v1/paper",
+            "WSM_v1/wsg_reader",
+        ),
     )
     reader_count = _copy_tracked(
         reader_root,
@@ -98,4 +107,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

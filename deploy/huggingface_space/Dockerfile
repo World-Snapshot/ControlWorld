@@ -27,11 +27,10 @@ COPY . /app
 
 RUN python -m pip install "/app/plugins/WSMs[webui]" \
     && python -m pip check \
-    && useradd --create-home --uid 1000 space \
     && mkdir -p /data/.huggingface /app/outputs \
-    && chown -R space:space /app /data
+    && chown -R 1000:1000 /app /data
 
-USER space
+USER 1000
 EXPOSE 7860
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20m --retries=5 \

@@ -1,12 +1,13 @@
 # ControlWorld: A Plugin WebUI for World Snapshot Models
 
-[[Paper]](https://github.com/FangSen9000/CVPR2027_WSM) |
+[[Paper]](https://arxiv.org/abs/2611.24917) |
 [[Project Page]](https://world-snapshot.github.io/) |
 [[WSMs]](https://github.com/World-Snapshot/WSMs) |
 [[World Snapshot Graphics]](https://github.com/World-Snapshot/wsg) |
 [[Models & Data]](https://huggingface.co/World-Snapshot) |
 [[Documentation]](https://world-snapshot.github.io/doc/index.html) |
-[[Organization]](https://github.com/World-Snapshot)
+[[Organization]](https://github.com/World-Snapshot) |
+[[Live Demo]](https://huggingface.co/spaces/FangSen9000/WSM-ControlWorld)
 
 ControlWorld is the interactive control panel of the World Snapshot ecosystem. It turns a model's directed visual-task graph into an executable interface: select a trained route, provide its image or text conditions, run the recommended checkpoint, and inspect the decoded result and live inference log.
 

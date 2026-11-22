@@ -1007,7 +1007,7 @@ export default class HFSpaceWrapper extends ControlWavePlugin {{
                 self.viser_server = WaveVisualizationServer(port=self.viser_port)
                 self.viser_server.start_server(background_mode=False)
             except Exception as e:
-                print(f"❌ Viser 启动失败: {e}")
+                print(f"❌ Failed to start Viser: {e}")
         
         self.viser_thread = threading.Thread(target=run_viser, daemon=True)
         self.viser_thread.start()
@@ -1015,7 +1015,7 @@ export default class HFSpaceWrapper extends ControlWavePlugin {{
         # Start the required service (Viser).
         import time
         time.sleep(3)
-        print(f"✅ Viser 后端启动成功 (端口: {self.viser_port})")
+        print(f"✅ Viser backend started successfully (port: {self.viser_port})")
     
     def run(self, open_browser=True):
         """Run implementation."""

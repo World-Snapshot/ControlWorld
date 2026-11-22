@@ -84,12 +84,12 @@ class WaveVisualizationServer:
         self.current_plugin = None  # Handle the conditional case.
         self.plugin_names = {}  # Convert the value to the required representation (ID).
         
-        print(f"🔧 Viser 后端初始化 (端口: {port})")
+        print(f"🔧 Initializing Viser backend (port: {port})")
     
     def start_server(self, background_mode=True):
         """Start server implementation."""
         if self.is_running:
-            print("⚠️ Viser服务器已在运行")
+            print("⚠️ Viser server is already running")
             return self.server
             
         try:
@@ -107,8 +107,8 @@ class WaveVisualizationServer:
             # Load the required resource.
             self._load_plugin_backends()
             
-            print(f"✅ Viser服务器启动成功 (端口: {self.port})")
-            print(f"📦 已加载 {len(self.plugins)} 个插件后端")
+            print(f"✅ Viser server started successfully (port: {self.port})")
+            print(f"📦 Loaded {len(self.plugins)} plugin backends")
             
             if background_mode:
                 # Start the required service.
@@ -117,7 +117,7 @@ class WaveVisualizationServer:
                         while self.is_running:
                             time.sleep(0.01)
                     except Exception as e:
-                        print(f"❌ 服务器循环错误: {e}")
+                        print(f"❌ Server loop error: {e}")
                 
                 thread = threading.Thread(target=server_loop, daemon=True)
                 thread.start()
@@ -128,10 +128,10 @@ class WaveVisualizationServer:
                     while self.is_running:
                         time.sleep(0.01)
                 except KeyboardInterrupt:
-                    print("\n👋 关闭 Viser 后端...")
+                    print("\n👋 Shutting down the Viser backend...")
                     
         except Exception as e:
-            print(f"❌ 启动Viser服务器失败: {e}")
+            print(f"❌ Failed to start the Viser server: {e}")
             self.is_running = False
             raise
     
@@ -149,7 +149,7 @@ class WaveVisualizationServer:
             # Configure the required value.
             @self.server.on_client_connect
             def handle_client_connect(client):
-                print("🔗 客户端已连接，设置背景")
+                print("🔗 Client connected; configuring the background")
                 # Display the relevant element.
                 solid_color_image = np.full((height, width, 3), bg_color, dtype=np.uint8)
                 self.server.scene.set_background_image(solid_color_image, format="png")
@@ -159,9 +159,9 @@ class WaveVisualizationServer:
         if self.server:
             # Create the required object.
             self.plugin_dropdown = self.server.gui.add_dropdown(
-                "当前插件",
-                options=["无插件"],  # Implementation note.
-                initial_value="无插件"
+                "Active Plugin",
+                options=["No Plugin"],  # Implementation note.
+                initial_value="No Plugin"
             )
             
             # Register the event listener.
@@ -178,13 +178,13 @@ class WaveVisualizationServer:
                 if plugin_id:
                     self._switch_plugin_gui(plugin_id)
             
-            print("📁 已创建插件选择下拉框")
+            print("📁 Created the plugin-selection menu")
     
     def _load_plugin_backends(self):
         """Load plugin backends implementation."""
         plugins_dir = Path("plugins")
         if not plugins_dir.exists():
-            print("⚠️ 插件目录不存在")
+            print("⚠️ Plugin directory does not exist")
             return
             
         # Add the required entry (plugins, Python).
@@ -237,20 +237,20 @@ class WaveVisualizationServer:
                             canonical_id = canonical_id or plugin_name
 
                             if canonical_id in self.plugins and self.plugins[canonical_id] is not plugin_instance:
-                                print(f"⚠️ 插件标识 {canonical_id} 已存在，使用目录名 {plugin_name}")
+                                print(f"⚠️ Plugin ID {canonical_id} already exists; using folder name {plugin_name}")
                                 canonical_id = plugin_name
 
                             self.plugins[canonical_id] = plugin_instance
                             self._register_plugin_aliases(canonical_id, plugin_name)
-                            print(f"✅ 加载插件后端: {plugin_name}")
+                            print(f"✅ Loaded plugin backend: {plugin_name}")
                             
                             # Create the required object (GUI).
                             self._create_plugin_gui(plugin_name, plugin_dir, plugin_instance, canonical_id)
                         else:
-                            print(f"⚠️ 插件 {plugin_name} 没有找到后端类")
+                            print(f"⚠️ Plugin {plugin_name} has no backend class")
                             
                 except Exception as e:
-                    print(f"❌ 加载插件后端失败 {plugin_name}: {e}")
+                    print(f"❌ Failed to load plugin backend {plugin_name}: {e}")
                     import traceback
                     traceback.print_exc()
                 break
@@ -328,12 +328,12 @@ class WaveVisualizationServer:
                     folder.visible = True
                     self.current_plugin = plugin_name
                 # Switch to the selected state.
-                elif self.plugin_dropdown.value == "无插件" and options:
+                elif self.plugin_dropdown.value == "No Plugin" and options:
                     self.plugin_dropdown.value = options[0]
                     folder.visible = True
                     self.current_plugin = plugin_name
         
-        print(f"🏷️ 为插件 {plugin_name} 创建了GUI文件夹")
+        print(f"🏷️ Created GUI folder for plugin {plugin_name}")
     
     def handle_message(self, message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Handle message implementation."""
@@ -353,7 +353,7 @@ class WaveVisualizationServer:
             try:
                 return self.plugins[canonical_id].handle_message(message)
             except Exception as e:
-                print(f"❌ 插件 {canonical_id} 处理消息失败: {e}")
+                print(f"❌ Plugin {canonical_id} failed to process message: {e}")
                 import traceback
                 traceback.print_exc()
                 return {"error": str(e)}
@@ -367,7 +367,7 @@ class WaveVisualizationServer:
     def switch_active_plugin(self, plugin_id: str) -> Dict[str, Any]:
         """Switch active plugin implementation."""
         canonical_id = self._normalize_plugin_id(plugin_id)
-        print(f"🎯 切换到插件: {canonical_id}")
+        print(f"🎯 Switched to plugin: {canonical_id}")
         
         if not canonical_id or canonical_id not in self.plugins:
             return {"error": f"Plugin not found: {plugin_id}"}
@@ -415,7 +415,7 @@ class WaveVisualizationServer:
     
     def shutdown(self):
         """Shutdown implementation."""
-        print("🔄 正在关闭Viser服务器...")
+        print("🔄 Shutting down the Viser server...")
         self.is_running = False
         
         # Shut down the resource.
@@ -424,7 +424,7 @@ class WaveVisualizationServer:
                 try:
                     plugin.shutdown()
                 except Exception as e:
-                    print(f"⚠️ 关闭插件 {plugin_name} 时出错: {e}")
+                    print(f"⚠️ Error while closing plugin {plugin_name}: {e}")
         
         # Implementation note (Viser).
         if self.server:
@@ -434,7 +434,7 @@ class WaveVisualizationServer:
                 pass
             self.server = None
             
-        print("✅ Viser服务器已关闭")
+        print("✅ Viser server stopped")
 
 
 # Implementation note.

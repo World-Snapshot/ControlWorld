@@ -341,7 +341,7 @@ class ModernControlWave:
                                 duplicates.append({
                                     "id": plugin_id,
                                     "folders": [seen_ids[plugin_id]["folder"], folder.name],
-                                    "message": f"插件ID '{plugin_id}' 在文件夹 '{seen_ids[plugin_id]['folder']}' 和 '{folder.name}' 中重复"
+                                    "message": f"Plugin ID '{plugin_id}' is duplicated in folders '{seen_ids[plugin_id]['folder']}' and '{folder.name}'"
                                 })
                                 continue  # Manage the plugin state.
                             else:
@@ -361,7 +361,7 @@ class ModernControlWave:
                         plugins.append(plugin_info)
                         
                     except Exception as e:
-                        print(f"❌ 无法解析插件 {folder.name}: {e}")
+                        print(f"❌ Could not parse plugin {folder.name}: {e}")
                         # Add the required entry.
                         plugins.append({
                             "id": folder.name,
@@ -400,13 +400,13 @@ class ModernControlWave:
             if not url:
                 return {
                     "status": "error",
-                    "message": "URL参数缺失"
+                    "message": "URL parameter is missing"
                 }
             
             def parse_repo_url(raw_url: str):
                 parsed = urlparse(raw_url)
                 if parsed.scheme not in ("http", "https") or not parsed.netloc:
-                    return None, "请提供有效的GitHub或Hugging Face仓库URL"
+                    return None, "Provide a valid GitHub or Hugging Face repository URL"
 
                 host = parsed.netloc.lower()
                 if host.startswith("www."):
@@ -414,18 +414,18 @@ class ModernControlWave:
 
                 allowed_hosts = {"github.com", "huggingface.co", "hf.co"}
                 if host not in allowed_hosts:
-                    return None, "请提供有效的GitHub或Hugging Face仓库URL"
+                    return None, "Provide a valid GitHub or Hugging Face repository URL"
 
                 path_parts = [part for part in parsed.path.split('/') if part]
                 if not path_parts:
-                    return None, "仓库URL缺少路径"
+                    return None, "Repository URL is missing a path"
 
                 tree_index = path_parts.index("tree") if "tree" in path_parts else None
                 subfolder_path = None
 
                 if tree_index is not None:
                     if len(path_parts) <= tree_index + 1:
-                        return None, "无效的仓库子文件夹URL"
+                        return None, "Invalid repository subfolder URL"
                     subfolder_parts = path_parts[tree_index + 2:]
                     subfolder_path = "/".join(subfolder_parts) if subfolder_parts else None
                     base_parts = path_parts[:tree_index]
@@ -433,19 +433,19 @@ class ModernControlWave:
                     base_parts = path_parts
 
                 if not base_parts:
-                    return None, "仓库URL缺少仓库名"
+                    return None, "Repository URL is missing the repository name"
 
                 base_parts[-1] = base_parts[-1].removesuffix(".git")
                 repo_name = base_parts[-1]
 
                 if host == "github.com" and len(base_parts) < 2:
-                    return None, "GitHub仓库URL应包含用户名和仓库名"
+                    return None, "A GitHub repository URL must include an owner and repository name"
 
                 if host in {"huggingface.co", "hf.co"}:
                     # Implementation note (spaces, datasets, models, user, repo).
                     if base_parts[0] in {"spaces", "datasets", "models"}:
                         if len(base_parts) < 3:
-                            return None, "Hugging Face仓库URL格式不完整"
+                            return None, "The Hugging Face repository URL is incomplete"
                     # Handle the current operation (repo_name).
 
                 repo_url = f"{parsed.scheme}://{parsed.netloc}/{'/'.join(base_parts)}"
@@ -478,7 +478,7 @@ class ModernControlWave:
                 with tempfile.TemporaryDirectory() as temp_dir:
                     temp_path = Path(temp_dir)
                     
-                    print(f"🔄 克隆仓库: {repo_url}")
+                    print(f"🔄 Cloning repository: {repo_url}")
                     
                     # Implementation note (git, clone).
                     result = subprocess.run(
@@ -490,7 +490,7 @@ class ModernControlWave:
                     if result.returncode != 0:
                         return {
                             "status": "error",
-                            "message": f"Git克隆失败: {result.stderr}"
+                            "message": f"Git clone failed: {result.stderr}"
                         }
                     
                     # Manage the required filesystem resource.
@@ -505,14 +505,14 @@ class ModernControlWave:
                     if not source_path.exists():
                         return {
                             "status": "error",
-                            "message": f"找不到插件路径: {source_path}"
+                            "message": f"Plugin path was not found: {source_path}"
                         }
                     
                     # Validate the current state (index.js).
                     if self._find_plugin_file(source_path, "index.js") is None:
                         return {
                             "status": "error",
-                            "message": "该目录不是有效的插件（缺少index.js文件）"
+                            "message": "This directory is not a valid plugin (index.js is missing)"
                         }
                     
                     # Manage the required filesystem resource.
@@ -532,7 +532,7 @@ class ModernControlWave:
                     venv_dirs = list(target_path.glob('.venv*')) + list(target_path.glob('venv*'))
                     for venv_dir in venv_dirs:
                         if venv_dir.is_dir() and (venv_dir / 'pyvenv.cfg').exists():
-                            print(f"🔧 检测到虚拟环境 {venv_dir.name}，正在修复符号链接...")
+                            print(f"🔧 Detected virtual environment {venv_dir.name}; repairing symbolic links...")
                             try:
                                 bin_dir = venv_dir / 'bin'
                                 if not bin_dir.exists():
@@ -563,7 +563,7 @@ class ModernControlWave:
                                         )
                                         cfg_file.write_text(cfg_content)
 
-                                    print(f"✅ 虚拟环境 {venv_dir.name} 符号链接已修复")
+                                    print(f"✅ Repaired symbolic links in virtual environment {venv_dir.name}")
 
                                     # Validate the current state.
                                     setup_script = self._find_plugin_file(target_path, 'setup_venv.sh')
@@ -572,7 +572,7 @@ class ModernControlWave:
                                     )
 
                                     if setup_script is not None:
-                                        print(f"📦 检测到 setup_venv.sh，正在运行安装脚本...")
+                                        print("📦 Found setup_venv.sh; running the installation script...")
                                         result = subprocess.run(
                                             ['bash', setup_script.name],
                                             cwd=str(setup_script.parent),
@@ -581,11 +581,11 @@ class ModernControlWave:
                                             timeout=600  # Implementation note.
                                         )
                                         if result.returncode == 0:
-                                            print(f"✅ 依赖安装成功")
+                                            print("✅ Dependencies installed successfully")
                                         else:
-                                            print(f"⚠️  依赖安装失败: {result.stderr}")
+                                            print(f"⚠️ Dependency installation failed: {result.stderr}")
                                     elif requirements_file is not None:
-                                        print(f"📦 检测到 {requirements_file.name}，正在安装依赖...")
+                                        print(f"📦 Found {requirements_file.name}; installing dependencies...")
                                         pip_exe = bin_dir / 'pip'
                                         if not pip_exe.exists():
                                             pip_exe = bin_dir / 'pip3'
@@ -597,17 +597,17 @@ class ModernControlWave:
                                             timeout=600
                                         )
                                         if result.returncode == 0:
-                                            print(f"✅ 依赖安装成功")
+                                            print("✅ Dependencies installed successfully")
                                         else:
-                                            print(f"⚠️  依赖安装失败: {result.stderr}")
+                                            print(f"⚠️ Dependency installation failed: {result.stderr}")
                                 else:
-                                    print(f"⚠️  虚拟环境 {venv_dir.name} 缺少 bin 目录")
+                                    print(f"⚠️ Virtual environment {venv_dir.name} has no bin directory")
                             except subprocess.TimeoutExpired:
-                                print(f"⚠️  依赖安装超时（超过10分钟）")
+                                print("⚠️ Dependency installation timed out after 10 minutes")
                             except Exception as e:
-                                print(f"⚠️  虚拟环境 {venv_dir.name} 修复失败: {str(e)}")
+                                print(f"⚠️ Failed to repair virtual environment {venv_dir.name}: {e}")
 
-                    print(f"✅ 插件安装成功: {plugin_name}")
+                    print(f"✅ Plugin installed successfully: {plugin_name}")
                     
                     # Generate the required output (index.js, iframe).
                     index_js_path = self._find_plugin_file(target_path, "index.js")
@@ -642,9 +642,9 @@ export default class HFSpaceWrapper extends ControlWavePlugin {{
 """
                         try:
                             index_js_path.write_text(wrapper, encoding="utf-8")
-                            print(f"ℹ️ 插件缺少 index.js，已生成 iframe 包装指向 {iframe_src}")
+                            print(f"ℹ️ Plugin has no index.js; generated an iframe wrapper for {iframe_src}")
                         except Exception as e:
-                            print(f"⚠️ 生成包装 index.js 失败: {e}")
+                            print(f"⚠️ Failed to generate wrapper index.js: {e}")
                     
                     # Load the required resource.
                     plugin_info = {"id": plugin_name, "name": plugin_name}
@@ -665,7 +665,7 @@ export default class HFSpaceWrapper extends ControlWavePlugin {{
                     
                     return {
                         "status": "success",
-                        "message": f"插件 '{plugin_info['name']}' 安装成功",
+                        "message": f"Plugin '{plugin_info['name']}' installed successfully",
                         "pluginId": plugin_info["id"],
                         "pluginName": plugin_info["name"],
                         "pluginPath": str(target_path)
@@ -674,14 +674,14 @@ export default class HFSpaceWrapper extends ControlWavePlugin {{
             except subprocess.CalledProcessError as e:
                 return {
                     "status": "error",
-                    "message": f"执行git命令失败: {str(e)}"
+                    "message": f"Git command failed: {e}"
                 }
             except Exception as e:
                 import traceback
                 traceback.print_exc()
                 return {
                     "status": "error",
-                    "message": f"安装插件时发生错误: {str(e)}"
+                    "message": f"An error occurred while installing the plugin: {e}"
                 }
         
         @self.app.delete("/api/plugins/{plugin_id}")
@@ -906,7 +906,7 @@ export default class HFSpaceWrapper extends ControlWavePlugin {{
     async def handle_websocket_message(self, websocket: WebSocket, data: Dict[str, Any]):
         """Handle websocket message implementation."""
         msg_type = data.get("type")
-        print(f"📨 收到WebSocket消息: {msg_type}")
+        print(f"📨 Received WebSocket message: {msg_type}")
         
         if msg_type == "update_visualization":
             # Implementation note (Viser).

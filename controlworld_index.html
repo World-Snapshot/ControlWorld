@@ -21,9 +21,9 @@
     
     <!-- Implementation note. -->
     <script>
-        console.log('🚀 ControlWave 页面开始加载...', new Date().toISOString());
+        console.log('🚀 ControlWorld page loading...', new Date().toISOString());
         console.log('📍 URL:', window.location.href);
-        console.log('🔄 Document状态:', document.readyState);
+        console.log('🔄 Document state:', document.readyState);
         const originalMode = new URLSearchParams(window.location.search).get("cw_original") === "1";
         if (originalMode) {
             document.documentElement.setAttribute("translate", "no");
@@ -77,12 +77,12 @@
         })();
 
         function checkPageHealth() {
-            console.log('🔍 页面健康检查开始...');
+            console.log('🔍 Starting page health check...');
             
             // Implementation note.
-            console.log('📰 页面标题:', document.title);
-            console.log('🏗️ Body存在:', !!document.body);
-            console.log('📏 Body长度:', document.body ? document.body.innerHTML.length : 0);
+            console.log('📰 Page title:', document.title);
+            console.log('🏗️ Body exists:', !!document.body);
+            console.log('📏 Body length:', document.body ? document.body.innerHTML.length : 0);
             
             // Validate the current state (HTML).
             const elements = {
@@ -93,16 +93,16 @@
                 'plugin-management': '#plugin-management'
             };
             
-            console.log('🏗️ 关键元素检查:');
+            console.log('🏗️ Checking key elements:');
             for (const [name, selector] of Object.entries(elements)) {
                 const element = document.querySelector(selector);
                 console.log(`  - ${name}: ${!!element}`);
                 if (!element) {
-                    console.error(`❌ 缺失关键元素: ${selector}`);
+                    console.error(`❌ Missing key element: ${selector}`);
                 }
             }
             
-            console.log('✅ 页面健康检查完成');
+            console.log('✅ Page health check complete');
         }
         
         // Validate the current state (DOM).
@@ -115,15 +115,15 @@
         // Display the relevant element.
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible') {
-                console.log('👀 页面变为可见');
+                console.log('👀 Page became visible');
             } else {
-                console.log('🙈 页面变为隐藏');
+                console.log('🙈 Page became hidden');
             }
         });
         
         // Register the event listener.
         window.addEventListener('beforeunload', function() {
-            console.log('👋 页面即将卸载');
+            console.log('👋 Page is unloading');
         });
     </script>
 
@@ -131,15 +131,15 @@
     <script>
         // Handle the current operation.
         window.addEventListener('error', function(e) {
-            console.error('❌ 全局错误:', e.message, e.filename, e.lineno, e.colno);
+            console.error('❌ Global error:', e.message, e.filename, e.lineno, e.colno);
             // Display the relevant element.
             if (document.body && document.body.innerHTML.trim() === '') {
-                document.body.innerHTML = '<div style="padding: 20px; color: red;">页面加载出错，请刷新重试</div>';
+                document.body.innerHTML = '<div style="padding: 20px; color: red;">The page failed to load. Please refresh and try again.</div>';
             }
         });
     </script>
     <script src="static/js/websocket-manager.js"></script>
-    <script type="module" src="./plugins/plugin-system.js" onerror="console.error('插件系统加载失败')"></script>
+    <script type="module" src="./plugins/plugin-system.js" onerror="console.error('Plugin system failed to load')"></script>
     
     <!-- Manage the required filesystem resource. -->
     <link rel="stylesheet" href="static/style/main.css">
@@ -148,7 +148,7 @@
     <!-- Handle the error condition (JavaScript). -->
     <noscript>
         <link rel="stylesheet" href="static/style/noscript.css">
-        <div class="error-message">JavaScript 被禁用或加载失败，请启用 JavaScript 或刷新页面。</div>
+        <div class="error-message">JavaScript is disabled or failed to load. Enable JavaScript or refresh the page.</div>
     </noscript>
     
 </head>
@@ -158,7 +158,7 @@
         <h1>ControlWorld</h1>
         <div class="header-links">
             <a href="https://world-snapshot.github.io/doc" target="_blank">[Document]</a>
-            <a href="https://github.com/World-Snapshot/ControlWave" target="_blank">[GitHub]</a>
+            <a href="https://github.com/World-Snapshot/ControlWorld" target="_blank">[GitHub]</a>
             <a href="https://x.com/SenFang01" target="_blank">[Author X]</a>
         </div>
     </div>
@@ -264,10 +264,10 @@
             const urlParams = new URLSearchParams(window.location.search);
             const backendPort = urlParams.get('backend');
             if (backendPort) {
-                console.log('📡 从URL获取后端端口:', backendPort);
+                console.log('📡 Backend port from URL:', backendPort);
                 return parseInt(backendPort);
             }
-            console.log('📡 使用默认后端端口: 8081');
+            console.log('📡 Using default backend port: 8081');
             return 8081;
         }
 
@@ -278,9 +278,9 @@
             viserPort: getViserPort(),
             viserLoaded: false,
             waves: [
-                { id: 0, name: "自由粒子", amplitude: 1.2, frequency: 2.0, kx: 1.0, ky: 0.5, kz: 0.3 },
-                { id: 1, name: "驻波", amplitude: 1.0, frequency: 3.0, kx: 1.0, ky: 1.0, kz: 0.0 },
-                { id: 2, name: "干涉波", amplitude: 0.8, frequency: 2.5, kx: -1.5, ky: 1.5, kz: 0.0 }
+                { id: 0, name: "Free Particle", amplitude: 1.2, frequency: 2.0, kx: 1.0, ky: 0.5, kz: 0.3 },
+                { id: 1, name: "Standing Wave", amplitude: 1.0, frequency: 3.0, kx: 1.0, ky: 1.0, kz: 0.0 },
+                { id: 2, name: "Interference Wave", amplitude: 0.8, frequency: 2.5, kx: -1.5, ky: 1.5, kz: 0.0 }
             ]
         };
 
@@ -295,8 +295,8 @@
         }
 
         function initializeApp() {
-            console.log("🚀 ControlWave 混合界面已初始化");
-            console.log("ℹ️ 插件系统正在加载...");
+            console.log("🚀 ControlWorld interface initialized");
+            console.log("ℹ️ Plugin system is loading...");
             const selector = document.getElementById("theme-select");
             const savedTheme = localStorage.getItem("controlworld-theme");
             const initialTheme = savedTheme === "dark" ? "dark" : "light";
@@ -332,7 +332,7 @@
                     });
                     
                     appState.currentTab = targetTab;
-                    console.log(`切换到选项卡: ${targetTab}`);
+                    console.log(`Switched to tab: ${targetTab}`);
                 });
             });
         }
@@ -439,11 +439,11 @@
 
             // Load the required resource.
             document.getElementById('export-waves').addEventListener('click', () => {
-                console.log('💾 导出波函数参数');
+                console.log('💾 Exporting wave-function parameters');
             });
 
             document.getElementById('load-waves').addEventListener('click', () => {
-                console.log('📁 加载波函数参数');
+                console.log('📁 Loading wave-function parameters');
             });
         }
 
@@ -482,13 +482,13 @@
                 loading.style.display = 'none';
                 iframe.style.display = 'block';
                 appState.viserLoaded = true;
-                console.log('✅ Viser 可视化已加载');
+                console.log('✅ Viser visualization loaded');
             });
 
             iframe.addEventListener('error', () => {
                 loading.innerHTML = `
                     <div class="status-indicator" style="background: #f8d7da; color: #721c24; border-color: #f5c6cb;">
-                        ❌ Viser 服务器连接失败，请确保后端正在运行在端口 ${appState.viserPort}
+                        ❌ Could not connect to the Viser server. Confirm that the backend is running on port ${appState.viserPort}.
                     </div>
                 `;
             });
@@ -497,7 +497,7 @@
         // Update the current state.
         function updateVisualization() {
             if (!appState.viserLoaded) {
-                console.log('⚠️ Viser 尚未加载完成');
+                console.log('⚠️ Viser has not finished loading');
                 return;
             }
 
@@ -517,7 +517,7 @@
                 }, '*');
             }
 
-            console.log('🔄 更新可视化参数:', params);
+            console.log('🔄 Updating visualization parameters:', params);
         }
 
         // Scan the available resources.
@@ -607,7 +607,7 @@
                     if (e.target.value === 'browse-local') {
                         // Manage the required filesystem resource.
                         // Implementation note (File, System, Access, API).
-                        const folderPath = prompt('Please enter the folder path relative to ControlWave directory:');
+                        const folderPath = prompt('Please enter the folder path relative to the ControlWorld directory:');
                         if (folderPath) {
                             // Create the required object.
                             const newOption = document.createElement('option');
@@ -632,7 +632,7 @@
         
         function connectWebSocket() {
             // Implementation note (WebSocket, websocket-manager.js).
-            console.log('🔌 WebSocket由websocket-manager.js管理');
+            console.log('🔌 WebSocket is managed by websocket-manager.js');
         }
         
         // Send the message (WebSocket).
@@ -640,7 +640,7 @@
             if (window.controlWaveWebSocket && window.controlWaveWebSocket.isConnected) {
                 window.controlWaveWebSocket.send(message);
             } else {
-                console.warn('WebSocket 未连接，无法发送消息');
+                console.warn('WebSocket is disconnected; the message was not sent');
             }
         }
         
@@ -656,7 +656,7 @@
         // Register the event listener (Viser).
         window.addEventListener('message', (event) => {
             if (event.data.type === 'viserReady') {
-                console.log('📡 Viser 准备就绪');
+                console.log('📡 Viser is ready');
                 updateVisualization();
             }
         });
@@ -665,7 +665,7 @@
     <footer>
         <p>This website is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.</p>
         <p>
-            This means you are free to borrow the <a href="https://github.com/World-Snapshot/ControlWave">source code</a> of this website,
+            This means you are free to borrow the <a href="https://github.com/World-Snapshot/ControlWorld">source code</a> of this website,
             we just ask that you link back to this page in the footer.
         </p>
     </footer>

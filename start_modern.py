@@ -46,7 +46,7 @@ class ModernControlWave:
         self.workspace_dir = self.base_dir.parent
         
         # Implementation note (FastAPI).
-        self.app = FastAPI(title="ControlWave")
+        self.app = FastAPI(title="ControlWorld")
         self.setup_middleware()
         self.setup_routes()
         
@@ -1019,7 +1019,7 @@ export default class HFSpaceWrapper extends ControlWavePlugin {{
     
     def run(self, open_browser=True):
         """Run implementation."""
-        print("🚀 启动 ControlWave 现代化系统...")
+        print("🚀 Starting ControlWorld...")
         
         # Start the required service (Viser).
         self.start_viser_backend()
@@ -1035,12 +1035,12 @@ export default class HFSpaceWrapper extends ControlWavePlugin {{
             local_ip = "localhost"
         
         print("\n" + "="*60)
-        print("✅ ControlWave 启动成功!")
+        print("✅ ControlWorld started successfully!")
         print("="*60)
-        print(f"🌐 主界面: http://localhost:{self.frontend_port}")
-        print(f"🌐 网络访问: http://{local_ip}:{self.frontend_port}")
+        print(f"🌐 Main interface: http://localhost:{self.frontend_port}")
+        print(f"🌐 Network access: http://{local_ip}:{self.frontend_port}")
         print(f"🔧 Viser 3D: http://localhost:{self.viser_port}")
-        print(f"📚 API 文档: http://localhost:{self.frontend_port}/docs")
+        print(f"📚 API documentation: http://localhost:{self.frontend_port}/docs")
         print("="*60)
         
         # Implementation note (SSH).
@@ -1057,21 +1057,21 @@ export default class HFSpaceWrapper extends ControlWavePlugin {{
             def open_browser_delayed():
                 time.sleep(2)  # Start the required service.
                 url = f"http://localhost:{self.frontend_port}"
-                print(f"\n🌐 正在打开浏览器: {url}")
+                print(f"\n🌐 Opening browser: {url}")
                 try:
                     webbrowser.open(url)
                 except Exception as e:
                     if is_ssh:
-                        print(f"⚠️  SSH环境下无法打开浏览器，请使用网络地址访问")
+                        print("⚠️ Cannot open a browser over SSH; use the network URL above")
                     else:
-                        print(f"⚠️  无法自动打开浏览器: {e}")
+                        print(f"⚠️ Could not open the browser automatically: {e}")
             
             threading.Thread(target=open_browser_delayed, daemon=True).start()
             
         if is_ssh:
-            print("\n💡 检测到SSH连接，请使用上方的网络地址访问")
+            print("\n💡 SSH connection detected; use the network URL above")
         
-        print("\n按 Ctrl+C 停止服务器\n")
+        print("\nPress Ctrl+C to stop the server\n")
         
         # Start the required service (FastAPI).
         config = uvicorn.Config(
@@ -1084,7 +1084,7 @@ export default class HFSpaceWrapper extends ControlWavePlugin {{
         
         # Handle the current operation.
         def signal_handler(signum, frame):
-            print("\n🛑 正在关闭服务器...")
+            print("\n🛑 Shutting down the server...")
             self.is_shutting_down = True
             if self.viser_server:
                 self.viser_server.shutdown()
@@ -1102,10 +1102,10 @@ def main():
     """Main implementation."""
     import argparse
     
-    parser = argparse.ArgumentParser(description="ControlWave 现代化启动器")
-    parser.add_argument("--frontend-port", type=int, default=8080, help="前端端口")
-    parser.add_argument("--viser-port", type=int, default=8081, help="Viser 端口")
-    parser.add_argument("--no-browser", action="store_true", help="不自动打开浏览器")
+    parser = argparse.ArgumentParser(description="ControlWorld launcher")
+    parser.add_argument("--frontend-port", type=int, default=8080, help="Frontend port")
+    parser.add_argument("--viser-port", type=int, default=8081, help="Viser port")
+    parser.add_argument("--no-browser", action="store_true", help="Do not open a browser")
     
     args = parser.parse_args()
     
@@ -1114,7 +1114,7 @@ def main():
         import fastapi
         import uvicorn
     except ImportError:
-        print("❌ 请先安装依赖: pip install fastapi uvicorn[standard]")
+        print("❌ Install the required dependencies: pip install fastapi uvicorn[standard]")
         sys.exit(1)
     
     # Create the required object.

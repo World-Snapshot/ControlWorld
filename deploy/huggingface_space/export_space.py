@@ -84,6 +84,7 @@ def main() -> None:
         excluded_prefixes=(
             "assets",
             "src/examples",
+            "src/tests",
             "WSM_v1/debug",
             "WSM_v1/env",
             "WSM_v1/manual_processing",

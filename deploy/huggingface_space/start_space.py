@@ -12,16 +12,13 @@ import subprocess
 import sys
 from typing import Iterable
 
-from huggingface_hub import snapshot_download
-
-
 SPACE_ROOT = Path(__file__).resolve().parent
-WSM_ROOT = SPACE_ROOT / "plugins" / "WSMs" / "WSM_v1"
+WSM_PLUGIN_ROOT = SPACE_ROOT / "plugins" / "WSMs"
+WSM_ROOT = WSM_PLUGIN_ROOT / "WSM_v1"
+if str(WSM_PLUGIN_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(WSM_PLUGIN_ROOT / "src"))
 DEMO_MANIFEST = WSM_ROOT / "webui" / "demo_assets" / "manifest.json"
 MODEL_REPO = os.getenv("WSM_SPACE_MODEL_REPO", "World-Snapshot/WSM_v1")
-BASE_MODEL_REPO = os.getenv(
-    "WSM_SPACE_BASE_MODEL", "black-forest-labs/FLUX.2-klein-4B"
-)
 FAMILY_ROOTS = {
     "dense": "train_log",
     "sparse": "train_log_sparse",
@@ -101,16 +98,9 @@ def _requested_heads(available: Iterable[str]) -> list[str]:
     return sorted(requested)
 
 
-def _run_pattern(checkpoint: str) -> str:
-    parts = Path(checkpoint).parts
-    if len(parts) < 3 or parts[0] not in FAMILY_ROOTS.values():
-        raise ValueError(f"Checkpoint has no portable family/head/run path: {checkpoint}")
-    return (Path(*parts[:3]) / "**").as_posix()
-
-
-def _install_family_links(snapshot: Path) -> None:
-    for folder in FAMILY_ROOTS.values():
-        source = snapshot / folder
+def _install_family_links(model_root: Path) -> None:
+    for family, folder in FAMILY_ROOTS.items():
+        source = model_root / "tunnelingnets" / family
         destination = WSM_ROOT / folder
         if not source.is_dir():
             continue
@@ -124,38 +114,44 @@ def _install_family_links(snapshot: Path) -> None:
 
 
 def prepare_models() -> dict[str, object]:
+    from wsms.container import WSMContainer
+
     configured = _configured_tasks()
     heads = _requested_heads(configured)
-    patterns = sorted({_run_pattern(configured[head]) for head in heads})
-    patterns.extend(["RELEASE_MANIFEST.json", "README.md"])
     print(
-        f"[WSM Space] Downloading {len(heads)} recommended Head(s) from {MODEL_REPO}",
+        f"[WSM Space] Resolving {len(heads)} TunnelingNet(s) from {MODEL_REPO}",
         flush=True,
     )
     token = os.getenv("HF_TOKEN") or None
-    snapshot = Path(
-        snapshot_download(
-            repo_id=MODEL_REPO,
-            repo_type="model",
-            allow_patterns=patterns,
-            token=token,
-        )
-    )
-    _install_family_links(snapshot)
+    container = WSMContainer.open(MODEL_REPO, token=token)
+    entries = {head: container.task_entry(head) for head in heads}
+    backbone = dict(container.model.get("backbone", {}))
+    names = list(backbone.get("artifacts", []))
+    for entry in entries.values():
+        names.extend(entry.get("artifacts", []))
+    cache = Path(os.getenv("WSM_MODEL_CACHE", "/data/wsm_model_cache"))
+    model_root = container.materialize(dict.fromkeys(names), cache)
+    base_path = model_root / str(backbone.get("root", "backbone"))
+    _install_family_links(model_root)
 
-    base_path: Path | None = None
-    if _truthy("WSM_SPACE_PRELOAD_BASE", default=True):
-        print(f"[WSM Space] Downloading shared backbone {BASE_MODEL_REPO}", flush=True)
-        base_path = Path(
-            snapshot_download(repo_id=BASE_MODEL_REPO, repo_type="model", token=token)
-        )
-        os.environ["WSM_FLUX2_MODEL_PATH"] = str(base_path)
+    # The local WebUI catalog remains backward compatible with historical
+    # checkpoint paths. The aliases point into the selected byte-range view;
+    # no second copy of a TunnelingNet is created.
+    for head, entry in entries.items():
+        actual = model_root / str(entry["checkpoint"])
+        expected = WSM_ROOT / configured[head]
+        expected.parent.mkdir(parents=True, exist_ok=True)
+        if expected != actual and not expected.exists():
+            expected.symlink_to(actual)
+    os.environ["WSM_FLUX2_MODEL_PATH"] = str(base_path)
+    os.environ["WSM_MODEL_SOURCE"] = MODEL_REPO
+    os.environ["WSM_MODEL_CACHE"] = str(cache)
     return {
         "model_repo": MODEL_REPO,
-        "base_model_repo": BASE_MODEL_REPO,
         "head_count": len(heads),
-        "model_snapshot": str(snapshot),
-        "base_model_snapshot": str(base_path) if base_path else None,
+        "single_file": True,
+        "model_cache": str(model_root),
+        "base_model": str(base_path),
     }
 
 
@@ -209,4 +205,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

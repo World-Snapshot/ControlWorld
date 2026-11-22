@@ -54,14 +54,14 @@ The complete ControlWorld interface can run on Hugging Face GPU hardware. The
 Docker deployment under
 [`deploy/huggingface_space`](deploy/huggingface_space/) exports ControlWorld,
 the WSM plugin, and WSG Reader as a standalone public Space repository and
-downloads the released WSM Heads and shared FLUX.2 backbone when it starts.
+reads the released single-file WSM checkpoint by byte range when it starts.
 
 ```bash
 python deploy/huggingface_space/export_space.py \
   --output /tmp/wsm-controlworld-space
 ```
 
-The default `paper-demo` profile loads the recommended Heads used by the paper
+The default `paper-demo` profile loads the recommended TunnelingNets used by the paper
 demonstrations. `selected` and `all` profiles provide smaller or broader
 deployments without changing the application code.
 
